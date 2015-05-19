@@ -289,5 +289,6 @@ func (ac *accessController) Authorized(ctx context.Context, accessItems ...auth.
 
 // init handles registering the token auth backend.
 func init() {
+	// 注册 token 情景构造函数
 	auth.Register("token", auth.InitFunc(newAccessController))
 }

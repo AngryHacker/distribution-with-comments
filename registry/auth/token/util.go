@@ -32,6 +32,7 @@ func joseBase64UrlDecode(s string) ([]byte, error) {
 }
 
 // actionSet is a special type of stringSet.
+// actionSet 是 stringSet 的特殊形式， 用于处理 action
 type actionSet struct {
 	stringSet
 }
@@ -42,11 +43,13 @@ func newActionSet(actions ...string) actionSet {
 
 // Contains calls StringSet.Contains() for
 // either "*" or the given action string.
+// action 是否存在的判断， 即 stringSet 中是否有 * 或者包含该 action
 func (s actionSet) contains(action string) bool {
 	return s.stringSet.contains("*") || s.stringSet.contains(action)
 }
 
 // contains returns true if q is found in ss.
+// q 是否在 ss 的数组切片中
 func contains(ss []string, q string) bool {
 	for _, s := range ss {
 		if s == q {

@@ -105,6 +105,6 @@ func (ch *challenge) Error() string {
 
 // init registers the silly auth backend.
 func init() {
-	// 用户注册
+	// 注册 silly 情景构造函数
 	auth.Register("silly", auth.InitFunc(newAccessController))
 }

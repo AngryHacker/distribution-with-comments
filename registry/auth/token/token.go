@@ -60,6 +60,7 @@ type Header struct {
 }
 
 // Token describes a JSON Web Token.
+// JSON Web Token 的结构
 type Token struct {
 	Raw       string
 	Header    *Header
@@ -69,6 +70,7 @@ type Token struct {
 
 // VerifyOptions is used to specify
 // options when verifying a JSON Web Token.
+// 对 JSON Web Token 的验证所需字段
 type VerifyOptions struct {
 	TrustedIssuers    []string
 	AcceptedAudiences []string
@@ -78,6 +80,7 @@ type VerifyOptions struct {
 
 // NewToken parses the given raw token string
 // and constructs an unverified JSON Web Token.
+// 根据 raw token 构造新的未验证的 JSON Web Token
 func NewToken(rawToken string) (*Token, error) {
 	parts := strings.Split(rawToken, TokenSeparator)
 	if len(parts) != 3 {
@@ -129,20 +132,24 @@ func NewToken(rawToken string) (*Token, error) {
 
 // Verify attempts to verify this token using the given options.
 // Returns a nil error if the token is valid.
+// 根据 options 检验 token
 func (t *Token) Verify(verifyOpts VerifyOptions) error {
 	// Verify that the Issuer claim is a trusted authority.
+	// 检验 Issuer
 	if !contains(verifyOpts.TrustedIssuers, t.Claims.Issuer) {
 		log.Errorf("token from untrusted issuer: %q", t.Claims.Issuer)
 		return ErrInvalidToken
 	}
 
 	// Verify that the Audience claim is allowed.
+	// 检验 Claim
 	if !contains(verifyOpts.AcceptedAudiences, t.Claims.Audience) {
 		log.Errorf("token intended for another audience: %q", t.Claims.Audience)
 		return ErrInvalidToken
 	}
 
 	// Verify that the token is currently usable and not expired.
+	// 检验 token 是否过期
 	currentUnixTime := time.Now().Unix()
 	if !(t.Claims.NotBefore <= currentUnixTime && currentUnixTime <= t.Claims.Expiration) {
 		log.Errorf("token not to be used before %d or after %d - currently %d", t.Claims.NotBefore, t.Claims.Expiration, currentUnixTime)
@@ -150,12 +157,14 @@ func (t *Token) Verify(verifyOpts VerifyOptions) error {
 	}
 
 	// Verify the token signature.
+	// 检验 token 的签名
 	if len(t.Signature) == 0 {
 		log.Error("token has no signature")
 		return ErrInvalidToken
 	}
 
 	// Verify that the signing key is trusted.
+	// 检验 signing key
 	signingKey, err := t.VerifySigningKey(verifyOpts)
 	if err != nil {
 		log.Error(err)
@@ -182,6 +191,7 @@ func (t *Token) Verify(verifyOpts VerifyOptions) error {
 //              the trustedKeys field of the given verify options.
 // Each of these methods are tried in that order of preference until the
 // signing key is found or an error is returned.
+// 依次根据 x5c jwk kid 找到 signing key 或者返回错误
 func (t *Token) VerifySigningKey(verifyOpts VerifyOptions) (signingKey libtrust.PublicKey, err error) {
 	// First attempt to get an x509 certificate chain from the header.
 	var (
@@ -207,6 +217,7 @@ func (t *Token) VerifySigningKey(verifyOpts VerifyOptions) (signingKey libtrust.
 	return
 }
 
+// 用 x5c 的方法找 signing key
 func parseAndVerifyCertChain(x5c []string, roots *x509.CertPool) (leafKey libtrust.PublicKey, err error) {
 	if len(x5c) == 0 {
 		return nil, errors.New("empty x509 certificate chain")
@@ -266,6 +277,7 @@ func parseAndVerifyCertChain(x5c []string, roots *x509.CertPool) (leafKey libtru
 	return
 }
 
+// 用 jwk 的方法找 signing key
 func parseAndVerifyRawJWK(rawJWK json.RawMessage, verifyOpts VerifyOptions) (pubKey libtrust.PublicKey, err error) {
 	pubKey, err = libtrust.UnmarshalPublicKeyJWK([]byte(rawJWK))
 	if err != nil {
@@ -311,6 +323,7 @@ func parseAndVerifyRawJWK(rawJWK json.RawMessage, verifyOpts VerifyOptions) (pub
 
 // accessSet returns a set of actions available for the resource
 // actions listed in the `access` section of this token.
+// 返回对所有对 resource 的 action list
 func (t *Token) accessSet() accessSet {
 	if t.Claims == nil {
 		return nil
