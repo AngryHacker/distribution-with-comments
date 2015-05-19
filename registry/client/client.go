@@ -25,10 +25,12 @@ type Client interface {
 	PutImageManifest(name, tag string, imageManifest *manifest.SignedManifest) error
 
 	// DeleteImage removes the image at the given name, tag pair.
+	// 删除镜像
 	DeleteImage(name, tag string) error
 
 	// ListImageTags returns a list of all image tags with the given repository
 	// name.
+	// 列出镜像列表
 	ListImageTags(name string) ([]string, error)
 
 	// BlobLength returns the length of the blob stored at the given name,

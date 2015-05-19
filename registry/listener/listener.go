@@ -12,6 +12,7 @@ import (
 // dead TCP connections (e.g. closing laptop mid-download) eventually
 // go away.
 // it is a plain copy-paste from net/http/server.go
+// tcp 长连接
 type tcpKeepAliveListener struct {
 	*net.TCPListener
 }
@@ -28,6 +29,7 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 
 // NewListener announces on laddr and net. Accepted values of the net are
 // 'unix' and 'tcp'
+// 创建新的 listener, 类型为 tcp 或者 unix
 func NewListener(net, laddr string) (net.Listener, error) {
 	switch net {
 	case "unix":
@@ -47,7 +49,8 @@ func newUnixListener(laddr string) (net.Listener, error) {
 		if !isSocket(fi.Mode()) {
 			return nil, fmt.Errorf("file %s exists and is not a socket", laddr)
 		}
-
+		
+		// 文件存在且为 socket, 则把该 socket 移除
 		if err := os.Remove(laddr); err != nil {
 			return nil, err
 		}
@@ -60,10 +63,12 @@ func newUnixListener(laddr string) (net.Listener, error) {
 	return net.Listen("unix", laddr)
 }
 
+// 判断是否是 socket
 func isSocket(m os.FileMode) bool {
 	return m&os.ModeSocket != 0
 }
 
+// 建立新的 tcp 连接
 func newTCPListener(laddr string) (net.Listener, error) {
 	ln, err := net.Listen("tcp", laddr)
 	if err != nil {
