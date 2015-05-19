@@ -39,11 +39,13 @@ import (
 
 // UserInfo carries information about
 // an autenticated/authorized client.
+// 通过验证的用户信息
 type UserInfo struct {
 	Name string
 }
 
 // Resource describes a resource by type and name.
+// 定义资源类型和名字
 type Resource struct {
 	Type string
 	Name string
@@ -51,6 +53,7 @@ type Resource struct {
 
 // Access describes a specific action that is
 // requested or allowed for a given resource.
+// 定义对资源的动作
 type Access struct {
 	Resource
 	Action string
@@ -59,6 +62,7 @@ type Access struct {
 // Challenge is a special error type which is used for HTTP 401 Unauthorized
 // responses and is able to write the response with WWW-Authenticate challenge
 // header values based on the error.
+// 用于返回 HTTP 401 未认证错误
 type Challenge interface {
 	error
 	// ServeHTTP prepares the request to conduct the appropriate challenge
@@ -98,6 +102,7 @@ type userInfoContext struct {
 	user UserInfo
 }
 
+// 根据 userInfoContext 返回对应信息
 func (uic userInfoContext) Value(key interface{}) interface{} {
 	switch key {
 	case "auth.user":
@@ -111,6 +116,7 @@ func (uic userInfoContext) Value(key interface{}) interface{} {
 
 // InitFunc is the type of an AccessController factory function and is used
 // to register the constructor for different AccesController backends.
+// AccessController 的工厂函数，作为 AccessController 的构造函数
 type InitFunc func(options map[string]interface{}) (AccessController, error)
 
 var accessControllers map[string]InitFunc
@@ -121,6 +127,7 @@ func init() {
 
 // Register is used to register an InitFunc for
 // an AccessController backend with the given name.
+// 给一个 AccessController 注册对应构造函数
 func Register(name string, initFunc InitFunc) error {
 	if _, exists := accessControllers[name]; exists {
 		return fmt.Errorf("name already registered: %s", name)
@@ -133,6 +140,7 @@ func Register(name string, initFunc InitFunc) error {
 
 // GetAccessController constructs an AccessController
 // with the given options using the named backend.
+// 获取 AccessController 的函数， 根据 options 进行初始化
 func GetAccessController(name string, options map[string]interface{}) (AccessController, error) {
 	if initFunc, exists := accessControllers[name]; exists {
 		return initFunc(options)

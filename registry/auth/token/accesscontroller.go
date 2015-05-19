@@ -19,10 +19,12 @@ import (
 
 // accessSet maps a typed, named resource to
 // a set of actions requested or authorized.
+// 定义了从 resource 到一组 action 的映射
 type accessSet map[auth.Resource]actionSet
 
 // newAccessSet constructs an accessSet from
 // a variable number of auth.Access items.
+// accessset 的创建函数
 func newAccessSet(accessItems ...auth.Access) accessSet {
 	accessSet := make(accessSet, len(accessItems))
 
@@ -33,11 +35,13 @@ func newAccessSet(accessItems ...auth.Access) accessSet {
 		}
 
 		set, exists := accessSet[resource]
+		// 资源不存在时则新建
 		if !exists {
 			set = newActionSet()
 			accessSet[resource] = set
 		}
-
+		
+		// 添加 Action
 		set.add(access.Action)
 	}
 
@@ -45,6 +49,7 @@ func newAccessSet(accessItems ...auth.Access) accessSet {
 }
 
 // contains returns whether or not the given access is in this accessSet.
+// 返回对某一资源的 action 是否存在于 accessSet 中
 func (s accessSet) contains(access auth.Access) bool {
 	actionSet, ok := s[access.Resource]
 	if ok {
@@ -57,6 +62,7 @@ func (s accessSet) contains(access auth.Access) bool {
 // scopeParam returns a collection of scopes which can
 // be used for a WWW-Authenticate challenge parameter.
 // See https://tools.ietf.org/html/rfc6750#section-3
+// 用于 challenge 的 scope 信息
 func (s accessSet) scopeParam() string {
 	scopes := make([]string, 0, len(s))
 
@@ -75,6 +81,7 @@ var (
 )
 
 // authChallenge implements the auth.Challenge interface.
+// 实现 auth.Challenge 的接口
 type authChallenge struct {
 	err       error
 	realm     string
@@ -83,11 +90,13 @@ type authChallenge struct {
 }
 
 // Error returns the internal error string for this authChallenge.
+// Error 方法
 func (ac *authChallenge) Error() string {
 	return ac.err.Error()
 }
 
 // Status returns the HTTP Response Status Code for this authChallenge.
+// Status 方法 -- 未验证
 func (ac *authChallenge) Status() int {
 	return http.StatusUnauthorized
 }
@@ -95,6 +104,7 @@ func (ac *authChallenge) Status() int {
 // challengeParams constructs the value to be used in
 // the WWW-Authenticate response challenge header.
 // See https://tools.ietf.org/html/rfc6750#section-3
+// 构造 challenge 的 WWW-Authenticate response 信息
 func (ac *authChallenge) challengeParams() string {
 	str := fmt.Sprintf("Bearer realm=%q,service=%q", ac.realm, ac.service)
 
@@ -111,13 +121,15 @@ func (ac *authChallenge) challengeParams() string {
 	return str
 }
 
-// SetHeader sets the WWW-Authenticate value for the given header.
+// SetHeader sets the WWW-Authenticate value for the given header.、
+// header 的 WWW-Authenticate 字段
 func (ac *authChallenge) SetHeader(header http.Header) {
 	header.Add("WWW-Authenticate", ac.challengeParams())
 }
 
 // ServeHttp handles writing the challenge response
 // by setting the challenge header and status code.
+// challenge 的 ServeHTTP 方法
 func (ac *authChallenge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ac.SetHeader(w.Header())
 	w.WriteHeader(ac.Status())
@@ -143,6 +155,7 @@ type tokenAccessOptions struct {
 
 // checkOptions gathers the necessary options
 // for an accessController from the given map.
+// 收集 accessController 的必要配置信息
 func checkOptions(options map[string]interface{}) (tokenAccessOptions, error) {
 	var opts tokenAccessOptions
 
@@ -162,18 +175,22 @@ func checkOptions(options map[string]interface{}) (tokenAccessOptions, error) {
 }
 
 // newAccessController creates an accessController using the given options.
+// AccessController 的创建函数
 func newAccessController(options map[string]interface{}) (auth.AccessController, error) {
+	// 读取配置
 	config, err := checkOptions(options)
 	if err != nil {
 		return nil, err
 	}
-
+	
+	// 打开证书
 	fp, err := os.Open(config.rootCertBundle)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open token auth root certificate bundle file %q: %s", config.rootCertBundle, err)
 	}
 	defer fp.Close()
-
+	
+	// 读取证书
 	rawCertBundle, err := ioutil.ReadAll(fp)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read token auth root certificate bundle file %q: %s", config.rootCertBundle, err)
@@ -238,7 +255,8 @@ func (ac *accessController) Authorized(ctx context.Context, accessItems ...auth.
 	}
 
 	rawToken := parts[1]
-
+	
+	// 建立新 token
 	token, err := NewToken(rawToken)
 	if err != nil {
 		challenge.err = err
@@ -251,7 +269,8 @@ func (ac *accessController) Authorized(ctx context.Context, accessItems ...auth.
 		Roots:             ac.rootCerts,
 		TrustedKeys:       ac.trustedKeys,
 	}
-
+	
+	// 验证 token
 	if err = token.Verify(verifyOpts); err != nil {
 		challenge.err = err
 		return nil, challenge
