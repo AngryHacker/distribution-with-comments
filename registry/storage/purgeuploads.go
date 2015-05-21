@@ -13,11 +13,13 @@ import (
 
 // uploadData stored the location of temporary files created during a layer upload
 // along with the date the upload was started
+// 记录在 layer 上传期间创建的临时文件路径和上传开始时间
 type uploadData struct {
 	containingDir string
 	startedAt     time.Time
 }
 
+// 新的上传数据
 func newUploadData() uploadData {
 	return uploadData{
 		containingDir: "",
@@ -29,6 +31,7 @@ func newUploadData() uploadData {
 // PurgeUploads deletes files from the upload directory
 // created before olderThan.  The list of files deleted and errors
 // encountered are returned
+// 从上传文件夹中删除旧于 olderThan 的文件并返回删除的文件列表和遇到的错误
 func PurgeUploads(ctx context.Context, driver storageDriver.StorageDriver, olderThan time.Time, actuallyDelete bool) ([]string, []error) {
 	log.Infof("PurgeUploads starting: olderThan=%s, actuallyDelete=%t", olderThan, actuallyDelete)
 	uploadData, errors := getOutstandingUploads(ctx, driver)
@@ -57,6 +60,7 @@ func PurgeUploads(ctx context.Context, driver storageDriver.StorageDriver, older
 // which could be eligible for deletion.  The only reliable way to
 // classify the age of a file is with the date stored in the startedAt
 // file, so gather files by UUID with a date from startedAt.
+// 遍历文件系统并确定哪些文件可以被删除， 主要根据 startedAt 文件中的 date 信息
 func getOutstandingUploads(ctx context.Context, driver storageDriver.StorageDriver) (map[string]uploadData, []error) {
 	var errors []error
 	uploads := make(map[string]uploadData, 0)
@@ -113,6 +117,7 @@ func getOutstandingUploads(ctx context.Context, driver storageDriver.StorageDriv
 // uUIDFromPath extracts the upload UUID from a given path
 // If the UUID is the last path component, this is the containing
 // directory for all upload files
+// 在 path 中提取上传的 uuid
 func uUIDFromPath(path string) (string, bool) {
 	components := strings.Split(path, "/")
 	for i := len(components) - 1; i >= 0; i-- {
@@ -124,6 +129,7 @@ func uUIDFromPath(path string) (string, bool) {
 }
 
 // readStartedAtFile reads the date from an upload's startedAtFile
+// 在 path 中读取 startdAtFile 文件中的 date 数据
 func readStartedAtFile(driver storageDriver.StorageDriver, path string) (time.Time, error) {
 	// todo:(richardscothern) - pass in a context
 	startedAtBytes, err := driver.GetContent(context.Background(), path)
