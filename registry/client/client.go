@@ -36,28 +36,34 @@ type Client interface {
 	// BlobLength returns the length of the blob stored at the given name,
 	// digest pair.
 	// Returns a length value of -1 on error or if the blob does not exist.
+	// 二进制文件长度
 	BlobLength(name string, dgst digest.Digest) (int, error)
 
 	// GetBlob returns the blob stored at the given name, digest pair in the
 	// form of an io.ReadCloser with the length of this blob.
 	// A nonzero byteOffset can be provided to receive a partial blob beginning
 	// at the given offset.
+	// 下载二进制文件， 而且进行部分下载
 	GetBlob(name string, dgst digest.Digest, byteOffset int) (io.ReadCloser, int, error)
 
 	// InitiateBlobUpload starts a blob upload in the given repository namespace
 	// and returns a unique location url to use for other blob upload methods.
+	// 初始化在一个 resposity 的二进制下载
 	InitiateBlobUpload(name string) (string, error)
 
 	// GetBlobUploadStatus returns the byte offset and length of the blob at the
 	// given upload location.
+	// 取得上传的状态
 	GetBlobUploadStatus(location string) (int, int, error)
 
 	// UploadBlob uploads a full blob to the registry.
+	// 把二进制文件完整上传到 registry 中
 	UploadBlob(location string, blob io.ReadCloser, length int, dgst digest.Digest) error
 
 	// UploadBlobChunk uploads a blob chunk with a given length and startByte to
 	// the registry.
 	// FinishChunkedBlobUpload must be called to finalize this upload.
+	// 将二进制块上传， 结束时必须调用 FinishChunkBlobUpload
 	UploadBlobChunk(location string, blobChunk io.ReadCloser, length, startByte int) error
 
 	// FinishChunkedBlobUpload completes a chunked blob upload at a given
@@ -66,6 +72,7 @@ type Client interface {
 
 	// CancelBlobUpload deletes all content at the unfinished blob upload
 	// location and invalidates any future calls to this blob upload.
+	// 取消会把所有未上传成功的文件删除
 	CancelBlobUpload(location string) error
 }
 

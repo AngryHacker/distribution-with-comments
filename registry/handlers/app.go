@@ -435,11 +435,12 @@ func (app *App) context(w http.ResponseWriter, r *http.Request) *Context {
 func (app *App) authorized(w http.ResponseWriter, r *http.Request, context *Context) error {
 	ctxu.GetLogger(context).Debug("authorizing request")
 	repo := getName(context)
-
+	
+	// 没有访问控制
 	if app.accessController == nil {
 		return nil // access controller is not enabled.
 	}
-
+	
 	var accessRecords []auth.Access
 
 	if repo != "" {
