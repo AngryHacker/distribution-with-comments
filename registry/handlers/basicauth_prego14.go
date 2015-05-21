@@ -14,6 +14,8 @@ import (
 // BasicAuth returns the username and password provided in the request's
 // Authorization header, if the request uses HTTP Basic Authentication.
 // See RFC 2617, Section 2.
+
+// 为了使得在 go1.3 及之前同样支持
 func basicAuth(r *http.Request) (username, password string, ok bool) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {

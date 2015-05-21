@@ -1,6 +1,7 @@
 // Package middleware - cloudfront wrapper for storage libs
 // N.B. currently only works with S3, not arbitrary sites
 //
+// 为云端存储设计的中间件， 目前只有 s3
 package middleware
 
 import (

@@ -23,6 +23,7 @@ type node interface {
 	modtime() time.Time
 }
 
+// 实现了一个基于内存的 storagedriver....
 // dir is the central type for the memory-based  storagedriver. All operations
 // are dispatched from a root dir.
 type dir struct {

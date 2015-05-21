@@ -104,12 +104,15 @@ type StorageDriver interface {
 // number of path components separated by slashes, where each component is
 // restricted to lowercase alphanumeric characters or a period, underscore, or
 // hyphen.
+// 设定路径必须满足的正则
 var PathRegexp = regexp.MustCompile(`^(/[A-Za-z0-9._-]+)+$`)
 
 // ErrUnsupportedMethod may be returned in the case where a StorageDriver implementation does not support an optional method.
+// storage 不支持某方法而抛出的错误
 var ErrUnsupportedMethod = errors.New("unsupported method")
 
 // PathNotFoundError is returned when operating on a nonexistent path.
+// 路径不存在
 type PathNotFoundError struct {
 	Path string
 }
@@ -119,6 +122,7 @@ func (err PathNotFoundError) Error() string {
 }
 
 // InvalidPathError is returned when the provided path is malformed.
+// 不合格的路径
 type InvalidPathError struct {
 	Path string
 }
@@ -129,6 +133,7 @@ func (err InvalidPathError) Error() string {
 
 // InvalidOffsetError is returned when attempting to read or write from an
 // invalid offset.
+// 不合格的偏移量
 type InvalidOffsetError struct {
 	Path   string
 	Offset int64

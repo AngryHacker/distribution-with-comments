@@ -46,6 +46,8 @@ type Driver struct {
 // FromParameters constructs a new Driver with a given parameters map
 // Optional Parameters:
 // - rootdirectory
+// 根据配置文件设置参数变量
+// 只有一个 rootdirectory
 func FromParameters(parameters map[string]interface{}) *Driver {
 	var rootDirectory = defaultRootDirectory
 	if parameters != nil {

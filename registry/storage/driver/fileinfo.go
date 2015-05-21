@@ -4,20 +4,25 @@ import "time"
 
 // FileInfo returns information about a given path. Inspired by os.FileInfo,
 // it elides the base name method for a full path instead.
+// 对 path 的文件信息查询
 type FileInfo interface {
 	// Path provides the full path of the target of this file info.
+	// 完整路径信息
 	Path() string
 
 	// Size returns current length in bytes of the file. The return value can
 	// be used to write to the end of the file at path. The value is
 	// meaningless if IsDir returns true.
+	// 大小
 	Size() int64
 
 	// ModTime returns the modification time for the file. For backends that
 	// don't have a modification time, the creation time should be returned.
+	// 修改时间
 	ModTime() time.Time
 
 	// IsDir returns true if the path is a directory.
+	// 目录检查
 	IsDir() bool
 }
 
@@ -28,6 +33,7 @@ type FileInfo interface {
 // FileInfoFields provides the exported fields for implementing FileInfo
 // interface in storagedriver implementations. It should be used with
 // InternalFileInfo.
+// FileInfo 接口所需的值
 type FileInfoFields struct {
 	// Path provides the full path of the target of this file info.
 	Path string
@@ -48,6 +54,7 @@ type FileInfoFields struct {
 // FileInfoInternal implements the FileInfo interface. This should only be
 // used by storagedriver implementations that don't have a specialized
 // FileInfo type.
+// FileInfo 接口的实现， 只在 storagedriver 中调用
 type FileInfoInternal struct {
 	FileInfoFields
 }

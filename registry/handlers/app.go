@@ -34,10 +34,14 @@ type App struct {
 	context.Context
 
 	Config configuration.Configuration
-
+	
+	// 路由
 	router           *mux.Router                 // main application router, configured with dispatchers
+	// storage driver 的实例
 	driver           storagedriver.StorageDriver // driver maintains the app global storage driver instance.
+	// registry 后端
 	registry         distribution.Namespace      // registry is the primary registry backend for the app instance.
+	// 权限控制
 	accessController auth.AccessController       // main access controller for application
 
 	// events contains notification related configuration.
@@ -45,7 +49,8 @@ type App struct {
 		sink   notifications.Sink
 		source notifications.SourceRecord
 	}
-
+	
+	// redis 实例
 	redis *redis.Pool
 }
 
@@ -152,6 +157,7 @@ func NewApp(ctx context.Context, configuration configuration.Configuration) *App
 // register a handler with the application, by route name. The handler will be
 // passed through the application filters and context will be constructed at
 // request time.
+// 为 app 注册调度器
 func (app *App) register(routeName string, dispatch dispatchFunc) {
 
 	// TODO(stevvooe): This odd dispatcher/route registration is by-product of
@@ -164,6 +170,7 @@ func (app *App) register(routeName string, dispatch dispatchFunc) {
 }
 
 // configureEvents prepares the event sink for action.
+// 配置事件
 func (app *App) configureEvents(configuration *configuration.Configuration) {
 	// Configure all of the endpoint sinks.
 	var sinks []notifications.Sink
@@ -208,6 +215,7 @@ func (app *App) configureEvents(configuration *configuration.Configuration) {
 	}
 }
 
+// 配置 redis
 func (app *App) configureRedis(configuration *configuration.Configuration) {
 	if configuration.Redis.Addr == "" {
 		ctxu.GetLogger(app).Infof("redis not configured")
@@ -317,6 +325,7 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // for the route. The dispatcher will use this to dynamically create request
 // specific handlers for each endpoint without creating a new router for each
 // request.
+// 调度器函数
 type dispatchFunc func(ctx *Context, r *http.Request) http.Handler
 
 // TODO(stevvooe): dispatchers should probably have some validation error
@@ -401,6 +410,7 @@ func (app *App) logError(context context.Context, errors v2.Errors) {
 
 // context constructs the context object for the application. This only be
 // called once per request.
+// 构造 context 对象， 每个请求只构造一次
 func (app *App) context(w http.ResponseWriter, r *http.Request) *Context {
 	ctx := defaultContextManager.context(app, w, r)
 	ctx = ctxu.WithVars(ctx, r)

@@ -8,12 +8,14 @@ import (
 
 // InitFunc is the type of a StorageMiddleware factory function and is
 // used to register the constructor for different StorageMiddleware backends.
+// 为不同的 StorageMiddleware 后端设计的工厂函数
 type InitFunc func(storageDriver storagedriver.StorageDriver, options map[string]interface{}) (storagedriver.StorageDriver, error)
 
 var storageMiddlewares map[string]InitFunc
 
 // Register is used to register an InitFunc for
 // a StorageMiddleware backend with the given name.
+// 注册函数
 func Register(name string, initFunc InitFunc) error {
 	if storageMiddlewares == nil {
 		storageMiddlewares = make(map[string]InitFunc)
@@ -28,6 +30,7 @@ func Register(name string, initFunc InitFunc) error {
 }
 
 // Get constructs a StorageMiddleware with the given options using the named backend.
+// 给一个 storageDriver 构造一个 StorageMiddleware
 func Get(name string, options map[string]interface{}, storageDriver storagedriver.StorageDriver) (storagedriver.StorageDriver, error) {
 	if storageMiddlewares != nil {
 		if initFunc, exists := storageMiddlewares[name]; exists {
