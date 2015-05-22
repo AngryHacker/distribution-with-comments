@@ -39,6 +39,7 @@ func init() {
 }
 
 func main() {
+	// 解析命令行参数
 	flag.Usage = usage
 	flag.Parse()
 
@@ -49,7 +50,8 @@ func main() {
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "version", version.Version)
-
+	
+	// 解析配置文件
 	config, err := resolveConfiguration()
 	if err != nil {
 		fatalf("configuration error: %v", err)
@@ -59,7 +61,8 @@ func main() {
 	if err != nil {
 		fatalf("error configuring logger: %v", err)
 	}
-
+	
+	// 新建 app 实例
 	app := handlers.NewApp(ctx, *config)
 	handler := configureReporting(app)
 	handler = gorhandlers.CombinedLoggingHandler(os.Stdout, handler)
@@ -67,17 +70,20 @@ func main() {
 	if config.HTTP.Debug.Addr != "" {
 		go debugServer(config.HTTP.Debug.Addr)
 	}
-
+	
+	// server 信息
 	server := &http.Server{
 		Handler: handler,
 	}
-
+	
+	// 监听
 	ln, err := listener.NewListener(config.HTTP.Net, config.HTTP.Addr)
 	if err != nil {
 		context.GetLogger(app).Fatalln(err)
 	}
 	defer ln.Close()
-
+	
+	// https 连接
 	if config.HTTP.TLS.Certificate != "" {
 		tlsConf := &tls.Config{
 			ClientAuth:   tls.NoClientCert,
@@ -111,7 +117,8 @@ func main() {
 			tlsConf.ClientAuth = tls.RequireAndVerifyClientCert
 			tlsConf.ClientCAs = pool
 		}
-
+		
+		// https 连接
 		ln = tls.NewListener(ln, tlsConf)
 		context.GetLogger(app).Infof("listening on %v, tls", ln.Addr())
 	} else {

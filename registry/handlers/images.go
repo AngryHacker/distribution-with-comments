@@ -17,6 +17,7 @@ import (
 
 // imageManifestDispatcher takes the request context and builds the
 // appropriate handler for handling image manifest requests.
+// manifest 的调度器
 func imageManifestDispatcher(ctx *Context, r *http.Request) http.Handler {
 	imageManifestHandler := &imageManifestHandler{
 		Context: ctx,
@@ -38,6 +39,7 @@ func imageManifestDispatcher(ctx *Context, r *http.Request) http.Handler {
 }
 
 // imageManifestHandler handles http operations on image manifests.
+// 处理对 manifest 的 http 操作
 type imageManifestHandler struct {
 	*Context
 
@@ -47,6 +49,7 @@ type imageManifestHandler struct {
 }
 
 // GetImageManifest fetches the image manifest from the storage backend, if it exists.
+// 从 storage 中获取 manifest
 func (imh *imageManifestHandler) GetImageManifest(w http.ResponseWriter, r *http.Request) {
 	ctxu.GetLogger(imh).Debug("GetImageManifest")
 	manifests := imh.Repository.Manifests()
@@ -128,7 +131,8 @@ func (imh *imageManifestHandler) PutImageManifest(w http.ResponseWriter, r *http
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
+	
+	// Put 方法在 manifeststore 里
 	if err := manifests.Put(&manifest); err != nil {
 		// TODO(stevvooe): These error handling switches really need to be
 		// handled by an app global mapper.
@@ -171,6 +175,7 @@ func (imh *imageManifestHandler) PutImageManifest(w http.ResponseWriter, r *http
 }
 
 // DeleteImageManifest removes the image with the given tag from the registry.
+// 不支持对 manifest 的删除
 func (imh *imageManifestHandler) DeleteImageManifest(w http.ResponseWriter, r *http.Request) {
 	ctxu.GetLogger(imh).Debug("DeleteImageManifest")
 

@@ -16,6 +16,7 @@ const blobCacheControlMaxAge = 365 * 24 * time.Hour
 
 // blobServer simply serves blobs from a driver instance using a path function
 // to identify paths and a descriptor service to fill in metadata.
+// 与 storage driver 打交道
 type blobServer struct {
 	driver  driver.StorageDriver
 	statter distribution.BlobStatter
@@ -63,7 +64,8 @@ func (bs *blobServer) ServeBlob(ctx context.Context, w http.ResponseWriter, r *h
 			// Set the content length if not already set.
 			w.Header().Set("Content-Length", fmt.Sprint(desc.Length))
 		}
-
+		
+		// 将内容通过 http 写到 storage
 		http.ServeContent(w, r, desc.Digest.String(), time.Time{}, br)
 	}
 

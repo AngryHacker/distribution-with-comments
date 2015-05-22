@@ -10,6 +10,7 @@ import (
 
 // registry is the top-level implementation of Registry for use in the storage
 // package. All instances should descend from this object.
+// registry 的定义
 type registry struct {
 	blobStore                   *blobStore
 	blobServer                  distribution.BlobServer
@@ -20,6 +21,7 @@ type registry struct {
 // NewRegistryWithDriver creates a new registry instance from the provided
 // driver. The resulting registry may be shared by multiple goroutines but is
 // cheap to allocate.
+// 创建含 storageDriver 的 registry
 func NewRegistryWithDriver(ctx context.Context, driver storagedriver.StorageDriver, blobDescriptorCacheProvider cache.BlobDescriptorCacheProvider) distribution.Namespace {
 
 	// create global statter, with cache.
@@ -61,6 +63,7 @@ func (reg *registry) Scope() distribution.Scope {
 // Repository returns an instance of the repository tied to the registry.
 // Instances should not be shared between goroutines but are cheap to
 // allocate. In general, they should be request scoped.
+// 返回 registry 中的一个 repositry
 func (reg *registry) Repository(ctx context.Context, name string) (distribution.Repository, error) {
 	if err := v2.ValidateRespositoryName(name); err != nil {
 		return nil, distribution.ErrRepositoryNameInvalid{
@@ -87,6 +90,7 @@ func (reg *registry) Repository(ctx context.Context, name string) (distribution.
 }
 
 // repository provides name-scoped access to various services.
+// repository 的定义
 type repository struct {
 	*registry
 	ctx             context.Context
@@ -102,6 +106,7 @@ func (repo *repository) Name() string {
 // Manifests returns an instance of ManifestService. Instantiation is cheap and
 // may be context sensitive in the future. The instance should be used similar
 // to a request local.
+// 返回一个 ManifestService
 func (repo *repository) Manifests() distribution.ManifestService {
 	return &manifestStore{
 		ctx:        repo.ctx,
@@ -135,6 +140,7 @@ func (repo *repository) Manifests() distribution.ManifestService {
 // Blobs returns an instance of the BlobStore. Instantiation is cheap and
 // may be context sensitive in the future. The instance should be used similar
 // to a request local.
+// 返回一个 BlobStore
 func (repo *repository) Blobs(ctx context.Context) distribution.BlobStore {
 	var statter distribution.BlobStatter = &linkedBlobStatter{
 		blobStore:  repo.blobStore,

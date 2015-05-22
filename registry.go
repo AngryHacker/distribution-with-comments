@@ -20,6 +20,7 @@ func (f fullScope) Contains(string) bool {
 
 // GlobalScope represents the full namespace scope which contains
 // all other scopes.
+// 全局 scope
 var GlobalScope = Scope(fullScope{})
 
 // Namespace represents a collection of repositories, addressable by name.
@@ -29,17 +30,21 @@ type Namespace interface {
 	// Scope describes the names that can be used with this Namespace. The
 	// global namespace will have a scope that matches all names. The scope
 	// effectively provides an identity for the namespace.
+	// 描述可以被 namespace 使用的名字
 	Scope() Scope
 
 	// Repository should return a reference to the named repository. The
 	// registry may or may not have the repository but should always return a
 	// reference.
+	// 一定会返回一个命名的 registry 的引用 ?
 	Repository(ctx context.Context, name string) (Repository, error)
 }
 
 // Repository is a named collection of manifests and layers.
+// manifest 和 layers 的库
 type Repository interface {
 	// Name returns the name of the repository.
+	// 名字
 	Name() string
 
 	// Manifests returns a reference to this repository's manifest service.
@@ -61,29 +66,37 @@ type Repository interface {
 // relationships.
 
 // ManifestService provides operations on image manifests.
+// ManifestService 提供对 image manifests 的操作
 type ManifestService interface {
 	// Exists returns true if the manifest exists.
+	// manifest 是否存在
 	Exists(dgst digest.Digest) (bool, error)
 
 	// Get retrieves the identified by the digest, if it exists.
+	// 通过 digest 获取 manifest
 	Get(dgst digest.Digest) (*manifest.SignedManifest, error)
 
 	// Delete removes the manifest, if it exists.
+	// 删除 manifest 不支持操作
 	Delete(dgst digest.Digest) error
 
 	// Put creates or updates the manifest.
+	// 创建或者更新一个 manifest
 	Put(manifest *manifest.SignedManifest) error
 
 	// TODO(stevvooe): The methods after this message should be moved to a
 	// discrete TagService, per active proposals.
 
 	// Tags lists the tags under the named repository.
+	// 列出 repository 的 tag
 	Tags() ([]string, error)
 
 	// ExistsByTag returns true if the manifest exists.
+	// 通过 tag 判断 manifest 是否存在
 	ExistsByTag(tag string) (bool, error)
 
 	// GetByTag retrieves the named manifest, if it exists.
+	// 通过 tag 获得 manifest
 	GetByTag(tag string) (*manifest.SignedManifest, error)
 
 	// TODO(stevvooe): There are several changes that need to be done to this

@@ -11,6 +11,7 @@ import (
 )
 
 // blobDispatcher uses the request context to build a blobHandler.
+// blob 分配器
 func blobDispatcher(ctx *Context, r *http.Request) http.Handler {
 	dgst, err := getDigest(ctx)
 	if err != nil {
@@ -31,7 +32,8 @@ func blobDispatcher(ctx *Context, r *http.Request) http.Handler {
 		Context: ctx,
 		Digest:  dgst,
 	}
-
+	
+	// GET 和 HEAD 方法都对应 GetBlob 方法
 	return handlers.MethodHandler{
 		"GET":  http.HandlerFunc(blobHandler.GetBlob),
 		"HEAD": http.HandlerFunc(blobHandler.GetBlob),

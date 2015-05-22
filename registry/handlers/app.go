@@ -39,7 +39,7 @@ type App struct {
 	router           *mux.Router                 // main application router, configured with dispatchers
 	// storage driver 的实例
 	driver           storagedriver.StorageDriver // driver maintains the app global storage driver instance.
-	// registry 后端
+	// registry 后端, 实际上是一个 Namespace
 	registry         distribution.Namespace      // registry is the primary registry backend for the app instance.
 	// 权限控制
 	accessController auth.AccessController       // main access controller for application
@@ -67,6 +67,7 @@ func NewApp(ctx context.Context, configuration configuration.Configuration) *App
 	app.Context = ctxu.WithLogger(app.Context, ctxu.GetLogger(app, "instance.id"))
 
 	// Register the handler dispatchers.
+	// 注册分配器
 	app.register(v2.RouteNameBase, func(ctx *Context, r *http.Request) http.Handler {
 		return http.HandlerFunc(apiBase)
 	})
@@ -75,7 +76,8 @@ func NewApp(ctx context.Context, configuration configuration.Configuration) *App
 	app.register(v2.RouteNameBlob, blobDispatcher)
 	app.register(v2.RouteNameBlobUpload, blobUploadDispatcher)
 	app.register(v2.RouteNameBlobUploadChunk, blobUploadDispatcher)
-
+	
+	// 创建 storage driver
 	var err error
 	app.driver, err = factory.Create(configuration.Storage.Type(), configuration.Storage.Parameters())
 	if err != nil {
@@ -97,16 +99,20 @@ func NewApp(ctx context.Context, configuration configuration.Configuration) *App
 	}
 
 	startUploadPurger(app, app.driver, ctxu.GetLogger(app), purgeConfig)
-
+	
+	// 创建 storage driver middleware
 	app.driver, err = applyStorageMiddleware(app.driver, configuration.Middleware["storage"])
 	if err != nil {
 		panic(err)
 	}
-
+	
+	// 配置事件
 	app.configureEvents(&configuration)
+	// 配置 redis
 	app.configureRedis(&configuration)
 
 	// configure storage caches
+	// 配置缓存
 	if cc, ok := configuration.Storage["cache"]; ok {
 		v, ok := cc["blobdescriptor"]
 		if !ok {
@@ -130,17 +136,20 @@ func NewApp(ctx context.Context, configuration configuration.Configuration) *App
 			}
 		}
 	}
-
+	
+	// 创建 registry
 	if app.registry == nil {
 		// configure the registry if no cache section is available.
 		app.registry = storage.NewRegistryWithDriver(app.Context, app.driver, nil)
 	}
-
+	
+	// 创建 registry mdidleware, 然而有什么用？ 
 	app.registry, err = applyRegistryMiddleware(app.registry, configuration.Middleware["registry"])
 	if err != nil {
 		panic(err)
 	}
-
+	
+	// auth 认证
 	authType := configuration.Auth.Type()
 
 	if authType != "" {
@@ -336,7 +345,8 @@ type dispatchFunc func(ctx *Context, r *http.Request) http.Handler
 func (app *App) dispatcher(dispatch dispatchFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		context := app.context(w, r)
-
+		
+		// 权限检查
 		if err := app.authorized(w, r, context); err != nil {
 			ctxu.GetLogger(context).Errorf("error authorizing context: %v", err)
 			return
@@ -344,8 +354,10 @@ func (app *App) dispatcher(dispatch dispatchFunc) http.Handler {
 
 		// Add username to request logging
 		context.Context = ctxu.WithLogger(context.Context, ctxu.GetLogger(context.Context, "auth.user.name"))
-
+		
+		// 名字
 		if app.nameRequired(r) {
+			// 取得 registry 中的 repository
 			repository, err := app.registry.Repository(context, getName(context))
 
 			if err != nil {
@@ -367,7 +379,8 @@ func (app *App) dispatcher(dispatch dispatchFunc) http.Handler {
 			context.Repository = notifications.Listen(
 				repository,
 				app.eventBridge(context, r))
-
+				
+			// repo middleware
 			context.Repository, err = applyRepoMiddleware(context.Repository, app.Config.Middleware["repository"])
 			if err != nil {
 				ctxu.GetLogger(context).Errorf("error initializing repository middleware: %v", err)
@@ -377,7 +390,7 @@ func (app *App) dispatcher(dispatch dispatchFunc) http.Handler {
 				return
 			}
 		}
-
+		
 		dispatch(context, r).ServeHTTP(w, r)
 		// Automated error response handling here. Handlers may return their
 		// own errors if they need different behavior (such as range errors
@@ -432,6 +445,7 @@ func (app *App) context(w http.ResponseWriter, r *http.Request) *Context {
 // authorized checks if the request can proceed with access to the requested
 // repository. If it succeeds, the context may access the requested
 // repository. An error will be returned if access is not available.
+// 检查请求是否具有权限
 func (app *App) authorized(w http.ResponseWriter, r *http.Request, context *Context) error {
 	ctxu.GetLogger(context).Debug("authorizing request")
 	repo := getName(context)
@@ -463,7 +477,8 @@ func (app *App) authorized(w http.ResponseWriter, r *http.Request, context *Cont
 			return fmt.Errorf("forbidden: no repository name")
 		}
 	}
-
+	
+	// 调用 Authorized 函数进行认证
 	ctx, err := app.accessController.Authorized(context.Context, accessRecords...)
 	if err != nil {
 		switch err := err.(type) {
@@ -523,6 +538,7 @@ func apiBase(w http.ResponseWriter, r *http.Request) {
 
 // appendAccessRecords checks the method and adds the appropriate Access records to the records list.
 func appendAccessRecords(records []auth.Access, method string, repo string) []auth.Access {
+	// 访问资源
 	resource := auth.Resource{
 		Type: "repository",
 		Name: repo,
@@ -530,12 +546,14 @@ func appendAccessRecords(records []auth.Access, method string, repo string) []au
 
 	switch method {
 	case "GET", "HEAD":
+	    // pull 权限
 		records = append(records,
 			auth.Access{
 				Resource: resource,
 				Action:   "pull",
 			})
 	case "POST", "PUT", "PATCH":
+	    // pull 和 push 权限
 		records = append(records,
 			auth.Access{
 				Resource: resource,
@@ -548,6 +566,7 @@ func appendAccessRecords(records []auth.Access, method string, repo string) []au
 	case "DELETE":
 		// DELETE access requires full admin rights, which is represented
 		// as "*". This may not be ideal.
+		// 需要所有权限
 		records = append(records,
 			auth.Access{
 				Resource: resource,
